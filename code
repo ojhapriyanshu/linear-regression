@@ -1,0 +1,104 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import pandas as pd
+
+# Load and normalize the data
+data_x = pd.read_excel('linearX.xlsx')
+data_y = pd.read_excel('linearY.xlsx')
+
+x = data_x.iloc[:, 0].values
+y = data_y.iloc[:, 0].values
+
+# Normalize x to have zero mean and unit variance
+x = (x - np.mean(x)) / np.std(x)
+
+# Gradient Descent Function
+def gradient_descent(x, y, lr, iterations):
+    m = len(y)
+    theta_0, theta_1 = 0, 0
+    costs = []
+    for _ in range(iterations):
+        error = (theta_0 + theta_1 * x) - y
+        theta_0 -= lr * np.sum(error) / m
+        theta_1 -= lr * np.sum(error * x) / m
+        costs.append(np.sum(error ** 2) / (2 * m))
+    return theta_0, theta_1, costs
+
+# Run Gradient Descent
+intercept, slope, cost_values = gradient_descent(x, y, lr=0.5, iterations=50)
+
+# Plot Cost Over Iterations
+plt.plot(cost_values)
+plt.xlabel('Iterations')
+plt.ylabel('Cost')
+plt.title('Cost Over Iterations')
+plt.show()
+
+# Plot Regression Line
+plt.scatter(x, y, label='Data Points')
+plt.plot(x, intercept + slope * x, color='red', label='Regression Line')
+plt.xlabel('X')
+plt.ylabel('Y')
+plt.title('Regression Line')
+plt.legend()
+plt.show()
+
+# Compare Learning Rates
+def compare_rates(x, y, rates, iterations):
+    for rate in rates:
+        _, _, costs = gradient_descent(x, y, rate, iterations)
+        plt.plot(costs, label=f'lr={rate}')
+    plt.xlabel('Iterations')
+    plt.ylabel('Cost')
+    plt.title('Cost Comparison for Different Learning Rates')
+    plt.legend()
+    plt.show()
+
+compare_rates(x, y, [0.005, 0.5, 5], 50)
+
+# Stochastic Gradient Descent
+def stochastic_gd(x, y, lr, iterations):
+    m = len(y)
+    theta_0, theta_1 = 0, 0
+    costs = []
+    for _ in range(iterations):
+        for i in range(m):
+            error = (theta_0 + theta_1 * x[i]) - y[i]
+            theta_0 -= lr * error
+            theta_1 -= lr * error * x[i]
+        costs.append(np.sum(((theta_0 + theta_1 * x) - y) ** 2) / (2 * m))
+    return theta_0, theta_1, costs
+
+# Mini-Batch Gradient Descent
+def mini_batch_gd(x, y, lr, iterations, batch_size):
+    m = len(y)
+    theta_0, theta_1 = 0, 0
+    costs = []
+    for _ in range(iterations):
+        indices = np.random.permutation(m)
+        x_shuffled, y_shuffled = x[indices], y[indices]
+        for i in range(0, m, batch_size):
+            x_batch = x_shuffled[i:i+batch_size]
+            y_batch = y_shuffled[i:i+batch_size]
+            if len(x_batch) == 0:  # Skip empty batches
+                continue
+            error = (theta_0 + theta_1 * x_batch) - y_batch
+            theta_0 -= lr * np.sum(error) / len(x_batch)
+            theta_1 -= lr * np.sum(error * x_batch) / len(x_batch)
+        costs.append(np.sum(((theta_0 + theta_1 * x) - y) ** 2) / (2 * m))
+    return theta_0, theta_1, costs
+
+# Run and Compare Gradient Descent Methods
+b_theta_0, b_theta_1, b_costs = gradient_descent(x, y, lr=0.1, iterations=50)
+s_theta_0, s_theta_1, s_costs = stochastic_gd(x, y, lr=0.1, iterations=50)
+m_theta_0, m_theta_1, m_costs = mini_batch_gd(x, y, lr=0.1, iterations=50, batch_size=10)
+
+# Plot Comparison of Gradient Descent Methods
+plt.plot(b_costs, label='Batch GD')
+plt.plot(s_costs, label='Stochastic GD')
+plt.plot(m_costs, label='Mini-Batch GD')
+plt.xlabel('Iterations')
+plt.ylabel('Cost')
+plt.title('Comparison of Gradient Descent Methods')
+plt.legend()
+plt.show()
